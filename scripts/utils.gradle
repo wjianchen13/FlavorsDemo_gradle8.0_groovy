@@ -1,0 +1,146 @@
+import java.text.SimpleDateFormat
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
+println("======================> utils.gradle: ")
+
+/**
+ * 导出函数，全局访问
+ */
+ext {
+    isCurrentFlavorNotNull= this.&isCurrentFlavorNotNull
+    getConfigValue= this.&getConfigValue
+    releaseTime= this.&releaseTime
+    currentData= this.&currentData
+    getFlavorsInfo = this.&getFlavorsInfo
+    checkCurFlavor = this.&checkCurFlavor
+    getCurrentFlavor = this.&getCurrentFlavor
+    getFlavorName = this.&getFlavorName
+}
+
+/**
+ * 当前flavor是否为空，点击运行程序和使用assembleRelease打包不会为空
+ * 如果同步就会为空，为空就不设置相关的属性，因为拿不到。
+ * 也可以默认设置一个flavor的属性，但是这个是不对的
+ * @return
+ */
+def isCurrentFlavorNotNull() {
+//    println("======================> isCurrentFlavorNotNull22: " + rootProject.currentFlavor)
+    return rootProject.currentFlavor
+}
+
+/**
+ * 获取当前flavor key对应的属性值
+ * @param key
+ * @return
+ */
+def getConfigValue(key) {
+//    println("======================> getConfigValue key: " + key)
+//    println("======================> getConfigValue rootProject.productConfig: " + rootProject.productConfig)
+//    println("======================> getConfigValue rootProject.currentFlavor: " + rootProject.currentFlavor)
+    if(rootProject.currentFlavor)
+        return rootProject.productConfig.get(rootProject.currentFlavor).get(key)
+    return ""
+}
+
+/**
+ * 获取flavor相关信息
+ * @param flavor
+ * @return
+ */
+def getFlavorsInfo(String flavor) {
+    return rootProject.ext.productConfig.get(flavor)
+}
+
+def releaseTime() {
+    return new Date().format("yyyy-MM-dd_HH-mm-ss")
+}
+
+def currentData() {
+    return new SimpleDateFormat("yy_MM_dd").format(new Date())
+}
+
+/**
+ * 打包或者debug运行时获得当前的flavorName！！
+ * @return
+ */
+def checkCurFlavor() {
+    Gradle gradle = getGradle()
+    String tskReqStr = gradle.getStartParameter().getTaskRequests().toString()
+
+    println("=======================> tskReqStr:" + tskReqStr)
+    println("=======================> rootProject name:" + project.getName())
+    Pattern pattern;
+
+    if (tskReqStr.contains("assemble")) {
+        pattern = Pattern.compile("assemble(\\w+)(Release|Debug|Beta)")
+    } else if (tskReqStr.contains("generate")) {
+        pattern = Pattern.compile("generate(\\w+)(Release|Debug|Beta)")
+    }
+    else if (tskReqStr.contains("bundle")) {
+        pattern = Pattern.compile("bundle(\\w+)(Release|Debug|Beta)")
+    } else {
+        pattern = Pattern.compile("generate(\\w+)(Release|Debug|Beta)")
+    }
+
+    Matcher matcher = pattern.matcher(tskReqStr)
+
+    if (matcher.find()) {
+        rootProject.currentFlavor = getFlavorName(curVariantsName = firstLowerCase(matcher.group(1)))
+        println("=======================> rootProject.currentFlavor: " +  rootProject.currentFlavor)
+        println("=======================> curVariantsName.toLowerCase()---->${curVariantsName.toLowerCase()},group------------>${getCurrentFlavor(rootProject).group.toLowerCase()}")
+        if (!curVariantsName.toLowerCase().startsWith(getCurrentFlavor(rootProject).group.toLowerCase())) {
+            throw new IllegalStateException("your group is not same with your buildVariants!")
+        }
+        println("=======================> checkCurFlavor------->${rootProject.curVariantsName},currentFlavor=${rootProject.curVariantsName}")
+    } else {
+        println("=======================> checkCurFlavor------->NO MATCH FLAVOR FOUND")
+    }
+}
+
+def getCurrentFlavor(rootProject) {
+    println("=======================> getCurrentFlavor.rootProject.currentFlavor------->" + rootProject.currentFlavor)
+    return getProductInfoByName(rootProject.currentFlavor, rootProject)
+}
+
+def getProductInfoByName(name, rootProject) {
+    println("=======================> name------->" + name)
+    for (Map.Entry entry : rootProject.productConfig) {
+        if (entry.key == name) {
+            println("=======================> returnreturn------->" + entry.key)
+            return entry.value;
+        }
+    }
+}
+
+String firstLowerCase(String s){
+    if(Character.isLowerCase(s.charAt(0)))
+        return s;
+    else{
+        char[] chars = s.toCharArray();
+        chars[0] += 32;
+        return String.valueOf(chars);
+    }
+}
+
+/**
+ * 获得真实渠道名称
+ * @param mergeFlavorName
+ * @return
+ */
+String getFlavorName(String mergeFlavorName){
+    if (!mergeFlavorName)
+        return "";
+    return mergeFlavorName
+            .toLowerCase()
+            .replaceAll("google", "")
+            .replaceAll("market", "")
+            .replaceAll("debug", "")
+            .replaceAll("release", "")
+            .replaceAll("test","")
+            .replaceAll("android", "");
+}
+
+
+
+

@@ -1,0 +1,280 @@
+import java.text.SimpleDateFormat
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion rootProject.ext.android.compileSdkVersion
+    buildToolsVersion rootProject.ext.android.buildToolsVersion
+
+    defaultConfig {
+        println("=================> defaultConfig currentFlavor: " + rootProject.ext.currentFlavor)
+        println("=======================> rootProject name:" + project.getName())
+        applicationId "com.cold.flavorsdemo"
+        minSdkVersion rootProject.ext.android.minSdkVersion
+        targetSdkVersion rootProject.ext.android.targetSdkVersion
+        versionCode rootProject.versionCode
+        versionName rootProject.versionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions "type", "version"
+
+    signingConfigs {
+        println("=================> signingConfigs currentFlavor: " + rootProject.ext.currentFlavor)
+        test1 {
+            storeFile file('../jks/test1.jks')
+            storePassword "123456"
+            keyAlias "key0"
+            keyPassword "123456"
+        }
+        test2 {
+            storeFile file('../jks/test2.jks')
+            storePassword "123456"
+            keyAlias "key0"
+            keyPassword "123456"
+        }
+    }
+
+    buildTypes {
+        println("=================> buildTypes currentFlavor: " + rootProject.ext.currentFlavor)
+        other {
+            debuggable true
+            jniDebuggable true
+            zipAlignEnabled true
+            minifyEnabled false
+            shrinkResources false
+            signingConfig null // 配置debug模式下的签名，在productFlavors里面配置
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
+//            resValue("string", "app_name", "\"${getConfigValue('app_name')}\"")
+            matchingFallbacks = ['debug','release']
+        }
+
+        debug {
+            debuggable true
+            jniDebuggable true
+            zipAlignEnabled true
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
+        }
+
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
+    }
+
+    productFlavors {
+        println("=================> productFlavors currentFlavor: " + rootProject.ext.currentFlavor)
+        google {
+            dimension "type"
+        }
+
+        market {
+            dimension "type"
+        }
+
+        ayome {
+            signingConfig signingConfigs.test1
+            dimension "version"
+
+            if (isCurrentFlavorNotNull()) {
+                versionCode getConfigValue('versionCode')
+                versionName "${getConfigValue('versionName')}"
+                buildConfigField "String", "WX_KEY", "\"wx7ecd5e9701f3adaf\""
+                buildConfigField "String", "WX_SECRET", "\"af9a655b3437b86a27b649272d3c0f0e\""
+                buildConfigField "String", "PACKGE_TYPE", "\"match\""
+                buildConfigField "String", "CHANNEL", "\"${getConfigValue('channel')}\""
+                buildConfigField "boolean", "IS_VISITOR", "${getConfigValue('isVisitor')}"
+                buildConfigField "boolean", "IS_MARKET", "${getConfigValue('isMarket')}"
+                resValue("string", "app_name", "\"${getConfigValue('app_name')}\"")
+            }
+        }
+
+        ayome1 {
+            signingConfig signingConfigs.test2
+            dimension "version"
+            resValue("string", "app_name", "\"${getConfigValue('app_name')}\"")
+        }
+    }
+
+//    isDebug = true
+
+    sourceSets {
+        println("=================> sourceSets currentFlavor: " + rootProject.ext.currentFlavor)
+
+        ayome {
+//            res.srcDirs += ['src/main/adapter/res']
+//            java.srcDirs += ['src/flavor/debug/src']
+//            manifest.srcFile 'src/flavor/debug/AndroidManifest.xml'
+        }
+
+        ayome1 {
+
+        }
+
+        sourceSets.all { sourceSet ->
+            def name = getFlavorName(sourceSet.name)
+            def info = getFlavorsInfo(name)
+            if(sourceSet != null
+                    && info != null
+                    && sourceSet.toString().contains(name) != null) {
+                println("=============================================================================================> sourceSet name3: ${name}")
+                if(rootProject.isDebug) {
+                    sourceSet.java.srcDirs += ['src/flavor/debug/src']
+                    sourceSet.res.srcDirs += ['src/flavor/debug/res']
+                    sourceSet.manifest.srcFile 'src/flavor/debug/AndroidManifest.xml'
+                } else {
+                    java.srcDirs += ['src/flavor/release/src']
+                }
+            }
+        }
+    }
+
+    /**
+     * 自定义apk文件名
+     */
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def fileName
+//            println("=====================> isCurrentFlavorNotNull(): " + isCurrentFlavorNotNull())
+            if(isCurrentFlavorNotNull() && outputFile != null && outputFile.name.endsWith('.apk')) {
+                if (variant.buildType.name == ('release')) {
+                    // 这里只是设置outputFileName这个变量，只有release才会设置，打包release时输出apk就会在该路径下
+                    fileName = "${getConfigValue('app_name')}_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${releaseTime()}_${getConfigValue('channel')}_${rootProject.isDebug ? "Debug" : "Release"}.apk"
+                    outputFileName = new File("../../../../../../outputApk/${new SimpleDateFormat("yy_MM_dd").format(new Date())}", fileName).toString()
+                }
+            }
+        }
+
+        /**
+         * mapping文件
+         **/
+        if (variant.getBuildType().isMinifyEnabled()) {
+            variant.assemble.doLast {
+                if(isCurrentFlavorNotNull()) {
+                    String desktopDir = "${rootProject.rootDir}\\outputMapping"
+                    File cacheFile = new File(desktopDir + java.io.File.separator + (new java.text.SimpleDateFormat("yy_MM_dd").format(new Date())))
+                    if (!cacheFile.exists())
+                        cacheFile.mkdirs()
+                    def mappingDir = cacheFile.getPath()
+                    if (variant.mappingFile.exists()) {
+                        def copyName = "${getConfigValue('app_name')}_ ${defaultConfig.versionCode}_${defaultConfig.versionName}_${releaseTime()}_apk.txt"
+                        copy {
+                            from variant.mappingFile
+                            into mappingDir
+                            rename {
+                                copyName
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 备份aab
+    /**
+     * 这个文件名有问题，中间少了一条 -
+     * "app-${rootProject.ext.currentFlavor}-release.aab"
+     */
+    tasks.whenTaskAdded { task ->
+        if (task.name.startsWith("bundle")) {
+            if(isCurrentFlavorNotNull()) {
+//                println("=================================================> task.name: " + task.name)
+                def flavor = task.name.substring("bundle".length()).uncapitalize()
+//                println("=================================================> equalsIgnoreCase2 flavor: " + flavor)
+                def variantNameRelease = "${rootProject.ext.curVariantsName}Release"
+                if (flavor.equalsIgnoreCase(variantNameRelease)) {
+                    println("==================================================================================================================================================> equalsIgnoreCase1 ")
+                    def renameTaskName = "rename${task.name.capitalize()}Aab"
+                    println("=================> equalsIgnoreCase2 flavor: " + flavor)
+                    def fromPath = "${buildDir}\\outputs\\bundle\\${flavor}\\"
+                    println("=================> equalsIgnoreCase3 fromPath: " + fromPath)
+                    // app-google-ayome-release.aab
+                    def archive = "${project.getName()}-${getConfigValue('group')}-${rootProject.ext.currentFlavor}-release.aab"
+                    println("=================> equalsIgnoreCase3 rootProject.ext.currentFlavor: " + "${rootProject.ext.currentFlavor}")
+                    println("=================> equalsIgnoreCase3 archive: " + archive)
+                    def myName = "${getConfigValue('app_name')}_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${releaseTime()}_${getConfigValue('channel')}_${rootProject.isDebug ? "Debug" : "Release"}.aab"
+                    def dest = "../outputApk/${currentData()}/"
+                    Task renameTask = tasks.create(renameTaskName) {
+                        doLast {
+                            copy {
+                                println("=================> equalsIgnoreCase2 copy: ")
+                                from new File("${fromPath}${archive}")
+                                println("=================> equalsIgnoreCase3 from: " + "${fromPath}${archive}")
+                                into dest
+                                println("=================> equalsIgnoreCase3 dest: " + dest)
+                                rename {
+                                    myName
+                                }
+                            }
+                        }
+                    }
+
+                    task.finalizedBy(renameTaskName)
+                    def copyMappingTaskName = "copy${task.name.capitalize()}Mapping"
+                    def mappingFromPath = "${buildDir}/outputs/mapping/${flavor}/"
+                    String desktopDir = "${rootProject.rootDir}\\outputMapping"
+                    File cacheFile = new File(desktopDir + java.io.File.separator + new java.text.SimpleDateFormat("yy_MM_dd").format(new Date()));
+                    if (!cacheFile.exists())
+                        cacheFile.mkdirs()
+                    def mappingDestDir = cacheFile.getPath()
+                    def mappingFileName = "${getConfigValue('app_name')}_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${releaseTime()}_aab.txt"
+                    tasks.create(copyMappingTaskName) {
+                        doLast {
+                            copy {
+                                from new File("${mappingFromPath}mapping.txt")
+                                into mappingDestDir
+                                rename {
+                                    mappingFileName
+                                }
+                            }
+                        }
+                    }
+                    renameTask.finalizedBy(copyMappingTaskName)
+                }
+            }
+        }
+    }
+
+}
+
+def getCurrentFlavor() {
+    Gradle gradle = getGradle()
+    String  tskReqStr = gradle.getStartParameter().getTaskRequests().toString()
+
+    Pattern pattern;
+//    println("=================> tskReqStr: " + tskReqStr)
+    if( tskReqStr.contains( "assemble" ) )
+        pattern = Pattern.compile("assemble(\\w+)(Release|Debug)")
+    else
+        pattern = Pattern.compile("bundle(\\w+)(Release|Debug)")
+
+    Matcher matcher = pattern.matcher( tskReqStr )
+
+    if( matcher.find()) {
+        return matcher.group(1).toLowerCase()
+    } else {
+        println "NO MATCH FOUND"
+        return ""
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(path: ':lib_common')
+//    googleImplementation project(path: ':lib_main')
+//    marketImplementation project(path: ':lib_market')
+    implementation project(path: ':lib_main')
+    implementation project(path: ':lib_market')
+    implementation rootProject.ext.dependencies.appcompat
+    implementation rootProject.ext.dependencies.constraintlayout
+    testImplementation rootProject.ext.dependencies.junit
+    androidTestImplementation rootProject.ext.dependencies.runner
+    androidTestImplementation rootProject.ext.dependencies.espresso
+
+}
