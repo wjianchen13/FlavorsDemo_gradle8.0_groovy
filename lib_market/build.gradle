@@ -3,6 +3,7 @@ plugins {
 }
 
 android {
+    namespace "com.example.lib_market"
     compileSdkVersion 33
 
     defaultConfig {

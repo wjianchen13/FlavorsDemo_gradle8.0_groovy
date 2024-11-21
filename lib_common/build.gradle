@@ -3,6 +3,7 @@ plugins {
 }
 
 android {
+    namespace "com.example.lib_common"
     compileSdkVersion rootProject.ext.android.compileSdkVersion
     buildToolsVersion rootProject.ext.android.buildToolsVersion
 

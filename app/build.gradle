@@ -5,6 +5,7 @@ import java.util.regex.Pattern
 apply plugin: 'com.android.application'
 
 android {
+    namespace "com.cold.flavorsdemo"
     compileSdkVersion rootProject.ext.android.compileSdkVersion
     buildToolsVersion rootProject.ext.android.buildToolsVersion
 

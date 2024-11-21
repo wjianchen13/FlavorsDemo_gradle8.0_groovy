@@ -120,6 +120,31 @@ debug加入debug相关的代码和资源，release则是另外的资源
 即使不删除build目录，gradle打包也会有新的apk文件输出
 
 
+## 修改成gradle 8.0遇到问题
+1.编译报错  
+Namespace not specified. Specify a namespace in the module's build file. 
+See https://d.android.com/r/tools/upgrade-assistant/set-namespace for information about setting the namespace.
+If you've specified the package attribute in the source AndroidManifest.xml, you can use the AGP Upgrade 
+Assistant to migrate to the namespace value in the build file. Refer to https://d.android.com/r/tools/upgrade-assistant/agp-upgrade-assistant 
+for general information about using the AGP Upgrade Assistant.
+解决办法
+在每个module的build.gradle上添加namespace，这个namespac就是AndroidManifest.xml下的package，并且把
+AndroidManifest.xml的package去掉
+android {
+      namespace "com.cold.flavorsdemo"
+      ...
+}
+
+2.编译报错
+Product Flavor 'ayome' contains custom BuildConfig fields, but the feature is disabled.
+To enable the feature, add the following to your module-level build.gradle:
+`android.buildFeatures.buildConfig true`
+解决办法：
+在gradle.properties文件中增加
+android.defaults.buildfeatures.buildconfig=true
+
+参考文档：
+https://blog.csdn.net/zxl1173558248/article/details/131143566
 
 
 
