@@ -146,6 +146,88 @@ android.defaults.buildfeatures.buildconfig=true
 参考文档：
 https://blog.csdn.net/zxl1173558248/article/details/131143566
 
+3.编译报错
+Gradle JVM version incompatible.
+This project is configured to use an older Gradle JVM that supports up to version 11 but the current AGP requires a Gradle JVM that supports version 17.
+需要把jdk版本修改为17
+
+4.项目编译报错：
+A problem occurred configuring project ':hyk_frame'.
+> Could not create task ':hyk_frame:greendaoPrepare'.
+> Cannot use @TaskAction annotation on method DetectEntityCandidatesTask.execute() because interface 
+> org.gradle.api.tasks.incremental.IncrementalTaskInputs is not a valid parameter to an action method.
+
+解决办法：
+把classpath 'org.greenrobot:greendao-gradle-plugin:3.3.0'修改为：
+classpath 'org.greenrobot:greendao-gradle-plugin:3.3.2'
+
+参考文档：
+AS中 Gradle8.0 配置greendao插件
+https://blog.csdn.net/xiaodongvtion/article/details/133708470
+
+5. 编译报错
+   Execution failed for task ':hyk_base:kaptGenerateStubsDebugKotlin'.
+> 'compileDebugJavaWithJavac' task (current target is 1.8) and 'kaptGenerateStubsDebugKotlin' task (current target is 17) jvm target compatibility should be set to the same Java version.
+Consider using JVM toolchain: https://kotl.in/gradle/jvm/toolchain
+
+解决办法：
+把
+compileOptions {
+sourceCompatibility JavaVersion.VERSION_1_8
+targetCompatibility JavaVersion.VERSION_1_8
+}
+改为 17
+compileOptions {
+sourceCompatibility = rootProject.ext.android.javaVersion
+targetCompatibility = rootProject.ext.android.javaVersion
+}
+
+参考文档：
+https://blog.csdn.net/weixin_45681365/article/details/138167808
+
+6.编译报错
+* Exception is:
+  org.gradle.internal.execution.WorkValidationException: A problem was found with the configuration of task ':hyk_frame:compileDebugKotlin' (type 'KotlinCompile').
+    - Gradle detected a problem with the following location: 'D:\temp5\tuantuan\hyk_frame\src\main\java'.
+
+      Reason: Task ':hyk_frame:compileDebugKotlin' uses this output of task ':hyk_frame:greendao' without declaring an explicit or implicit dependency. This can lead to incorrect results being produced, depending on what order the tasks are executed.
+
+      Possible solutions:
+        1. Declare task ':hyk_frame:greendao' as an input of ':hyk_frame:compileDebugKotlin'.
+        2. Declare an explicit dependency on ':hyk_frame:greendao' from ':hyk_frame:compileDebugKotlin' using Task#dependsOn.
+        3. Declare an explicit dependency on ':hyk_frame:greendao' from ':hyk_frame:compileDebugKotlin' using Task#mustRunAfter.
+
+解决办法：
+tasks.whenTaskAdded { task ->
+    if (task.name.matches("compile\w*Kotlin")) {
+        task.dependsOn('greendao')
+    }
+}
+
+参考文档：
+greenDAO适配AGP 8.0+版本
+https://juejin.cn/post/7255224807321681978
+
+7.子模块访问父模块资源失败
+解决办法：
+gradle.properties添加设置
+android.nonTransitiveRClass=false
+
+参考文档：
+Android子模块资源文件找不到
+https://www.jianshu.com/p/f176563ceca8
+
+
+5 种方法，来为 Android Studio Flamingo（火烈鸟）版本，准备 你的app构建
+https://blog.csdn.net/cnzzs/article/details/140703286
+
+8.使用case R.id.的地方都提示：错误: 需要常量表达式
+解决办法：
+在gradle.properties中添加下面代码
+android.nonFinalResIds=false
+参考文档：
+Android Constant expression required (case R.id.xxx)
+https://blog.csdn.net/GracefulGuigui/article/details/140296210
 
 
 ## license
