@@ -16,6 +16,7 @@ ext {
     checkCurFlavor = this.&checkCurFlavor
     getCurrentFlavor = this.&getCurrentFlavor
     getFlavorName = this.&getFlavorName
+    capitalizeFirstLetter = this.&capitalizeFirstLetter
 }
 
 /**
@@ -87,15 +88,28 @@ def checkCurFlavor() {
 
     if (matcher.find()) {
         rootProject.currentFlavor = getFlavorName(curVariantsName = firstLowerCase(matcher.group(1)))
+
         println("=======================> rootProject.currentFlavor: " +  rootProject.currentFlavor)
         println("=======================> curVariantsName.toLowerCase()---->${curVariantsName.toLowerCase()},group------------>${getCurrentFlavor(rootProject).group.toLowerCase()}")
+        rootProject.ext.renameTaskName = "renameBundle${capitalizeFirstLetter(rootProject.curVariantsName)}ReleaseAab"
+        rootProject.ext.copyMappingName = "copyBundle${capitalizeFirstLetter(rootProject.curVariantsName)}ReleaseMapping"
         if (!curVariantsName.toLowerCase().startsWith(getCurrentFlavor(rootProject).group.toLowerCase())) {
             throw new IllegalStateException("your group is not same with your buildVariants!")
         }
-        println("=======================> checkCurFlavor------->${rootProject.curVariantsName},currentFlavor=${rootProject.curVariantsName}")
+        println("=======================> checkCurFlavor------->${rootProject.curVariantsName},currentFlavor=${rootProject.curVariantsName}, " +
+                "renameTaskName = ${rootProject.ext.renameTaskName}, copyMappingName = ${rootProject.ext.copyMappingName}  ")
     } else {
         println("=======================> checkCurFlavor------->NO MATCH FLAVOR FOUND")
     }
+}
+
+/**
+ * 首字母转成大写
+ * @param str
+ * @return
+ */
+def capitalizeFirstLetter(String str) {
+    return str.substring(0, 1).toUpperCase() + str.substring(1)
 }
 
 def getCurrentFlavor(rootProject) {

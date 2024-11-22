@@ -4,6 +4,20 @@ import java.util.regex.Pattern
 
 apply plugin: 'com.android.application'
 
+ext {
+    fromPath = ""
+    archive = ""
+    dest = ""
+    myName = ""
+    mappingFromPath = ""
+    mappingDestDir = ""
+    mappingFileName = ""
+    renameTaskName = ""
+    copyMappingName = ""
+
+}
+
+
 android {
     namespace "com.cold.flavorsdemo"
     compileSdkVersion rootProject.ext.android.compileSdkVersion
@@ -141,7 +155,7 @@ android {
     applicationVariants.all { variant ->
         variant.outputs.all {
             def fileName
-//            println("=====================> isCurrentFlavorNotNull(): " + isCurrentFlavorNotNull())
+            println("=====================> applicationVariants outputFile.name: " + outputFile.name)
             if(isCurrentFlavorNotNull() && outputFile != null && outputFile.name.endsWith('.apk')) {
                 if (variant.buildType.name == ('release')) {
                     // 这里只是设置outputFileName这个变量，只有release才会设置，打包release时输出apk就会在该路径下
@@ -177,65 +191,70 @@ android {
         }
     }
 
+    Task renameTask = tasks.create(rootProject.ext.renameTaskName) {
+        doLast {
+            println("=================> renameTask name " + name)
+            copy {
+                println("=================> equalsIgnoreCase2 copy: ")
+                from new File("${rootProject.ext.fromPath}${rootProject.ext.archive}")
+                println("=================> equalsIgnoreCase3 from: " + "${rootProject.ext.fromPath}${rootProject.ext.archive}")
+                into rootProject.ext.dest
+                println("=================> equalsIgnoreCase3 dest: " + rootProject.ext.dest)
+                rename {
+                    rootProject.ext.myName
+                }
+            }
+        }
+    }
+
+    tasks.create(rootProject.ext.copyMappingName) {
+        println("=================> copy name " + name)
+        doLast {
+            copy {
+                from new File("${rootProject.ext.mappingFromPath}mapping.txt")
+                into rootProject.ext.mappingDestDir
+                rename {
+                    rootProject.ext.mappingFileName
+                }
+            }
+        }
+    }
+
+
     // 备份aab
     /**
      * 这个文件名有问题，中间少了一条 -
      * "app-${rootProject.ext.currentFlavor}-release.aab"
      */
-    tasks.whenTaskAdded { task ->
-        if (task.name.startsWith("bundle")) {
+    tasks.configureEach {
+        if (it.name.startsWith("bundle")) {
             if(isCurrentFlavorNotNull()) {
 //                println("=================================================> task.name: " + task.name)
-                def flavor = task.name.substring("bundle".length()).uncapitalize()
+                def flavor = it.name.substring("bundle".length()).uncapitalize()
 //                println("=================================================> equalsIgnoreCase2 flavor: " + flavor)
                 def variantNameRelease = "${rootProject.ext.curVariantsName}Release"
                 if (flavor.equalsIgnoreCase(variantNameRelease)) {
                     println("==================================================================================================================================================> equalsIgnoreCase1 ")
-                    def renameTaskName = "rename${task.name.capitalize()}Aab"
+                    def renameTaskName = "rename${it.name.capitalize()}Aab"
                     println("=================> equalsIgnoreCase2 flavor: " + flavor)
-                    def fromPath = "${buildDir}\\outputs\\bundle\\${flavor}\\"
+                    rootProject.ext.fromPath = "${buildDir}\\outputs\\bundle\\${flavor}\\"
                     println("=================> equalsIgnoreCase3 fromPath: " + fromPath)
                     // app-google-ayome-release.aab
-                    def archive = "${project.getName()}-${getConfigValue('group')}-${rootProject.ext.currentFlavor}-release.aab"
+                    rootProject.ext.archive = "${project.getName()}-${getConfigValue('group')}-${rootProject.ext.currentFlavor}-release.aab"
                     println("=================> equalsIgnoreCase3 rootProject.ext.currentFlavor: " + "${rootProject.ext.currentFlavor}")
                     println("=================> equalsIgnoreCase3 archive: " + archive)
-                    def myName = "${getConfigValue('app_name')}_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${releaseTime()}_${getConfigValue('channel')}_${rootProject.isDebug ? "Debug" : "Release"}.aab"
-                    def dest = "../outputApk/${currentData()}/"
-                    Task renameTask = tasks.create(renameTaskName) {
-                        doLast {
-                            copy {
-                                println("=================> equalsIgnoreCase2 copy: ")
-                                from new File("${fromPath}${archive}")
-                                println("=================> equalsIgnoreCase3 from: " + "${fromPath}${archive}")
-                                into dest
-                                println("=================> equalsIgnoreCase3 dest: " + dest)
-                                rename {
-                                    myName
-                                }
-                            }
-                        }
-                    }
+                    rootProject.ext.myName = "${getConfigValue('app_name')}_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${releaseTime()}_${getConfigValue('channel')}_${rootProject.isDebug ? "Debug" : "Release"}.aab"
+                    rootProject.ext.dest = "../outputApk/${currentData()}/"
 
-                    task.finalizedBy(renameTaskName)
-                    def copyMappingTaskName = "copy${task.name.capitalize()}Mapping"
-                    def mappingFromPath = "${buildDir}/outputs/mapping/${flavor}/"
+                    it.finalizedBy(renameTaskName)
+                    def copyMappingTaskName = "copy${it.name.capitalize()}Mapping"
+                    rootProject.ext.mappingFromPath = "${buildDir}/outputs/mapping/${flavor}/"
                     String desktopDir = "${rootProject.rootDir}\\outputMapping"
                     File cacheFile = new File(desktopDir + java.io.File.separator + new java.text.SimpleDateFormat("yy_MM_dd").format(new Date()));
                     if (!cacheFile.exists())
                         cacheFile.mkdirs()
-                    def mappingDestDir = cacheFile.getPath()
-                    def mappingFileName = "${getConfigValue('app_name')}_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${releaseTime()}_aab.txt"
-                    tasks.create(copyMappingTaskName) {
-                        doLast {
-                            copy {
-                                from new File("${mappingFromPath}mapping.txt")
-                                into mappingDestDir
-                                rename {
-                                    mappingFileName
-                                }
-                            }
-                        }
-                    }
+                    rootProject.ext.mappingDestDir = cacheFile.getPath()
+                    rootProject.ext.mappingFileName = "${getConfigValue('app_name')}_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${releaseTime()}_aab.txt"
                     renameTask.finalizedBy(copyMappingTaskName)
                 }
             }
@@ -243,6 +262,7 @@ android {
     }
 
 }
+
 
 def getCurrentFlavor() {
     Gradle gradle = getGradle()

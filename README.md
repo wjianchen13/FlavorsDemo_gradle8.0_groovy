@@ -230,6 +230,45 @@ Android Constant expression required (case R.id.xxx)
 https://blog.csdn.net/GracefulGuigui/article/details/140296210
 
 
+9.直接运行通过，打包需要升级jdk版本，把11升级到17
+
+10.升级android-junk-code:1.3.3
+
+11.报错ResourceException
+com.android.tools.r8.ResourceException: com.android.tools.r8.internal.Sb: I/O 
+exception while reading '/home/andrew/StudioProjects/Project/Module/build/intermediates/merged_java_res/netCleanRelease/base.jar':
+解决办法：
+build.gradle下面的写法：
+tasks.whenTaskAdded { task ->
+    if (task.name.matches("compile\\w*Kotlin")) {
+        task.dependsOn('greendao')
+    }
+}
+替换为：
+tasks.configureEach {
+    if(name.startsWith("connectedNet")) {
+        enabled = false
+    }
+}
+
+12.打包aab修改aab名称的逻辑修改
+
+13.打包的aap安装运行报错
+gradle.properties添加下面配置：
+android.enableR8.fullMode=false
+一开始是报presenter通过反射创建，初始化失败，启动页就退出了，然后我把启动页的Presenter添加到混淆脚本设置不混淆之后，就报下面的错误
+Missing type parameter
+参考文档：
+使用AGPv8代码混淆后Gson解析报错：Missing type parameter
+https://github.com/liangjingkanji/Net/issues/203
+
+14.去掉ButterKnife
+
+
+
+
+
+
 ## license
 
     Copyright 2019 wjianchen13
