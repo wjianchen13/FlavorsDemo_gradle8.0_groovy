@@ -264,7 +264,8 @@ https://github.com/liangjingkanji/Net/issues/203
 
 14.去掉ButterKnife
 
-
+15.一部分ext放到app下的build.gradle会提示找不到renameTaskName
+把它放到flavorsConfig.gradle之后就可以了
 
 
 

@@ -4,20 +4,7 @@ import java.util.regex.Pattern
 
 apply plugin: 'com.android.application'
 
-ext {
-    fromPath = ""
-    archive = ""
-    dest = ""
-    myName = ""
-    mappingFromPath = ""
-    mappingDestDir = ""
-    mappingFileName = ""
-    renameTaskName = ""
-    copyMappingName = ""
-
-}
-
-
+println("=================> rootProject.ext.renameTaskName " + rootProject.ext.renameTaskName)
 android {
     namespace "com.cold.flavorsdemo"
     compileSdkVersion rootProject.ext.android.compileSdkVersion
@@ -190,7 +177,7 @@ android {
             }
         }
     }
-
+    println("=================> rootProject.ext.renameTaskName " + rootProject.ext.renameTaskName)
     Task renameTask = tasks.create(rootProject.ext.renameTaskName) {
         doLast {
             println("=================> renameTask name " + name)

@@ -1,5 +1,17 @@
 
 ext {
+    fromPath = ""
+    archive = ""
+    dest = ""
+    myName = ""
+    mappingFromPath = ""
+    mappingDestDir = ""
+    mappingFileName = ""
+    renameTaskName = "renameTaskName"
+    copyMappingName = "copyMappingName"
+}
+
+ext {
 
     // 打包时改成对应的flavor name
     currentFlavor = ''
